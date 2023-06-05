@@ -12,14 +12,14 @@ func TestRedisStore_Set(t *testing.T) {
 	db, mock := redismock.NewClientMock()
 
 	key := "key"
-	record := Record{
+	record := slidingWindowRecord{
 		Start:        time.Now().UnixNano(),
 		PrevCount:    1,
 		CurrentCount: 2,
 	}
 	mock.ExpectHSet(key, record).SetVal(0)
 
-	s := NewRedisStore(db)
+	s := NewRedisStore[slidingWindowRecord](db)
 	err := s.Set(context.Background(), key, &record)
 
 	if err != nil {
@@ -36,7 +36,7 @@ func TestRedisStore_Increment(t *testing.T) {
 	key := "key"
 	mock.ExpectHIncrBy(key, currentCountFieldTag, 1).SetVal(1)
 
-	s := NewRedisStore(db)
+	s := NewRedisStore[slidingWindowRecord](db)
 	err := s.Increment(context.Background(), key)
 
 	if err != nil {
@@ -51,7 +51,7 @@ func TestRedisStore_Get(t *testing.T) {
 	db, mock := redismock.NewClientMock()
 
 	key := "key"
-	record := Record{
+	record := slidingWindowRecord{
 		Start:        time.Now().UnixNano(),
 		PrevCount:    1,
 		CurrentCount: 2,
@@ -62,7 +62,7 @@ func TestRedisStore_Get(t *testing.T) {
 		"current": "2",
 	})
 
-	s := NewRedisStore(db)
+	s := NewRedisStore[slidingWindowRecord](db)
 	result, err := s.Get(context.Background(), key)
 
 	if err != nil {

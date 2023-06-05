@@ -2,6 +2,7 @@ package ratelimit
 
 import (
 	"context"
+	"reflect"
 	"testing"
 	"time"
 )
@@ -9,7 +10,7 @@ import (
 func TestSlidingWindowLimiter_Allow(t *testing.T) {
 	limit := PerSecond(1)
 	key := "key"
-	ds := &mockDs{record: &Record{}}
+	ds := &mockDs[slidingWindowRecord]{record: &slidingWindowRecord{}}
 
 	limiter := NewSlidingWindowLimiter(ds)
 
@@ -50,20 +51,25 @@ func TestSlidingWindowLimiter_Allow(t *testing.T) {
 	}
 }
 
-type mockDs struct {
-	record *Record
+type mockDs[T record] struct {
+	record *T
 }
 
-func (m *mockDs) Increment(ctx context.Context, key string) error {
-	m.record.CurrentCount += 1
+func (m *mockDs[T]) Increment(ctx context.Context, key string) error {
+	switch reflect.TypeOf(m.record).String() {
+	case "*ratelimit.slidingWindowRecord":
+		r := reflect.ValueOf(m.record).Interface().(*slidingWindowRecord)
+		r.CurrentCount += 1
+	}
+
 	return nil
 }
 
-func (m *mockDs) Get(ctx context.Context, key string) (record *Record, err error) {
+func (m *mockDs[T]) Get(ctx context.Context, key string) (record *T, err error) {
 	return m.record, nil
 }
 
-func (m *mockDs) Set(ctx context.Context, key string, record *Record) error {
+func (m *mockDs[T]) Set(ctx context.Context, key string, record *T) error {
 	m.record = record
 	return nil
 }

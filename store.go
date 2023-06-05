@@ -5,52 +5,46 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-type Datastore interface {
+type Datastore[T record] interface {
 	Increment(ctx context.Context, key string) error
 
-	Get(ctx context.Context, key string) (record *Record, err error)
+	Get(ctx context.Context, key string) (record *T, err error)
 
-	Set(ctx context.Context, key string, record *Record) error
+	Set(ctx context.Context, key string, record *T) error
 }
 
-const (
-	currentCountFieldTag = "current"
-)
-
-type Record struct {
-	Start        int64 `redis:"start"`
-	PrevCount    int64 `redis:"prev"`
-	CurrentCount int64 `redis:"current"`
+type record interface {
+	slidingWindowRecord | tokenBucketRecord
 }
 
-func NewRedisStore(db *redis.Client) *RedisStore {
-	return &RedisStore{
+func NewRedisStore[T record](db *redis.Client) Datastore[T] {
+	return &RedisStore[T]{
 		db: db,
 	}
 }
 
-type RedisStore struct {
+type RedisStore[T record] struct {
 	db *redis.Client
 }
 
-func (r *RedisStore) Increment(ctx context.Context, key string) error {
+func (r *RedisStore[T]) Increment(ctx context.Context, key string) error {
 	return r.db.HIncrBy(ctx, key, currentCountFieldTag, 1).Err()
 }
 
-func (r *RedisStore) Get(ctx context.Context, key string) (*Record, error) {
-	var record Record
+func (r *RedisStore[T]) Get(ctx context.Context, key string) (*T, error) {
 	res := r.db.HGetAll(ctx, key)
 	if err := res.Err(); err != nil {
 		return nil, err
 	}
 
+	var record T
 	if err := res.Scan(&record); err != nil {
-		return nil, res.Err()
+		return nil, err
 	}
 
 	return &record, nil
 }
 
-func (r *RedisStore) Set(ctx context.Context, key string, record *Record) error {
+func (r *RedisStore[T]) Set(ctx context.Context, key string, record *T) error {
 	return r.db.HSet(ctx, key, record).Err()
 }

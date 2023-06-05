@@ -7,10 +7,20 @@ import (
 )
 
 type SlidingWindowLimiter struct {
-	ds Datastore
+	ds Datastore[slidingWindowRecord]
 }
 
-func NewSlidingWindowLimiter(ds Datastore) Limiter {
+const (
+	currentCountFieldTag = "current"
+)
+
+type slidingWindowRecord struct {
+	Start        int64 `redis:"start"`
+	PrevCount    int64 `redis:"prev"`
+	CurrentCount int64 `redis:"current"`
+}
+
+func NewSlidingWindowLimiter(ds Datastore[slidingWindowRecord]) Limiter {
 	return &SlidingWindowLimiter{
 		ds: ds,
 	}
@@ -26,7 +36,7 @@ func (l *SlidingWindowLimiter) Allow(ctx context.Context, key string, limit Limi
 
 	window, err := l.ds.Get(ctx, key)
 	if err != nil || window.Start == 0 {
-		l.ds.Set(ctx, key, &Record{
+		l.ds.Set(ctx, key, &slidingWindowRecord{
 			Start:        time.Now().UnixNano(),
 			CurrentCount: 1,
 		})
