@@ -24,46 +24,43 @@ func (l *SlidingWindowLimiter) Allow(ctx context.Context, key string, limit Limi
 		}, nil
 	}
 
-	limited, err := l.ds.GetLimit(ctx, key)
-	if err == nil && limited {
+	window, err := l.ds.Get(ctx, key)
+	if err != nil || window.Start == 0 {
+		l.ds.Set(ctx, key, &Record{
+			Start:        time.Now().UnixNano(),
+			CurrentCount: 1,
+		})
+
 		return &Result{
-			Allowed: false,
+			Allowed: true,
 		}, nil
 	}
 
-	ttl := 2 * limit.Period.Milliseconds() / 1e3
-
-	start, preCount, curCount, err := l.ds.Get(ctx, key, ttl)
-	if err != nil {
-		return nil, err
-	}
-
 	now := time.Now().UnixNano()
-	unit := limit.Period.Nanoseconds()
+	windowLength := limit.Period.Nanoseconds()
 
-	if (now - start) >= unit {
-		start += unit
-		preCount = curCount
-		curCount = 0
-		err = l.ds.Set(ctx, key, ttl, start, preCount, curCount)
+	if (now - window.Start) >= windowLength {
+		window.Start += windowLength
+		window.PrevCount = window.CurrentCount
+		window.CurrentCount = 0
+		err = l.ds.Set(ctx, key, window)
 		if err != nil {
 			fmt.Println(err)
 		}
 	}
 
-	d := float64(unit-(now-start)) / float64(unit)
+	d := float64(windowLength-(now-window.Start)) / float64(windowLength)
 
-	ec := float64(preCount)*d + float64(curCount)
+	currentCount := float64(window.PrevCount)*d + float64(window.CurrentCount)
 
-	if ec >= float64(limit.Rate) {
-		ttl := retryAfter(3, start, now, unit, preCount, curCount)
-		l.ds.SetLimit(ctx, key, ttl/1e9)
+	if currentCount >= float64(limit.Rate) {
+		ttl := retryAfter(int64(limit.Rate), window.Start, now, windowLength, window.PrevCount, window.CurrentCount)
 		return &Result{
 			Allowed:    false,
 			RetryAfter: time.Duration(ttl),
 		}, nil
 	} else {
-		err = l.ds.Add(ctx, key)
+		err = l.ds.Increment(ctx, key)
 		if err != nil {
 			fmt.Println(err)
 		}
