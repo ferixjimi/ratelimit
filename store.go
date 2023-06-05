@@ -13,21 +13,9 @@ type Datastore interface {
 	Set(ctx context.Context, key string, record *Record) error
 }
 
-func NewRedisStore(host string, password string, db int) *RedisStore {
-	rdb := redis.NewClient(&redis.Options{
-		Addr:     host,
-		Password: password,
-		DB:       db,
-	})
-
-	return &RedisStore{
-		client: rdb,
-	}
-}
-
-type RedisStore struct {
-	client *redis.Client
-}
+const (
+	currentCountFieldTag = "current"
+)
 
 type Record struct {
 	Start        int64 `redis:"start"`
@@ -35,13 +23,23 @@ type Record struct {
 	CurrentCount int64 `redis:"current"`
 }
 
+func NewRedisStore(db *redis.Client) *RedisStore {
+	return &RedisStore{
+		db: db,
+	}
+}
+
+type RedisStore struct {
+	db *redis.Client
+}
+
 func (r *RedisStore) Increment(ctx context.Context, key string) error {
-	return r.client.HIncrBy(ctx, key, "current", 1).Err()
+	return r.db.HIncrBy(ctx, key, currentCountFieldTag, 1).Err()
 }
 
 func (r *RedisStore) Get(ctx context.Context, key string) (*Record, error) {
 	var record Record
-	res := r.client.HGetAll(ctx, key)
+	res := r.db.HGetAll(ctx, key)
 	if err := res.Err(); err != nil {
 		return nil, err
 	}
@@ -54,5 +52,5 @@ func (r *RedisStore) Get(ctx context.Context, key string) (*Record, error) {
 }
 
 func (r *RedisStore) Set(ctx context.Context, key string, record *Record) error {
-	return r.client.HSet(ctx, key, record).Err()
+	return r.db.HSet(ctx, key, record).Err()
 }
