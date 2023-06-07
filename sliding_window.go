@@ -26,7 +26,7 @@ func NewSlidingWindowLimiter(ds Datastore[slidingWindowRecord]) Limiter {
 	}
 }
 
-func (l *SlidingWindowLimiter) Allow(ctx context.Context, key string, limit Limit) (*Result, error) {
+func (l *SlidingWindowLimiter) Allow(ctx context.Context, key string, limit *Limit) (*Result, error) {
 	// ignore negative rates
 	if limit.Rate < 0 {
 		return &Result{
@@ -64,7 +64,7 @@ func (l *SlidingWindowLimiter) Allow(ctx context.Context, key string, limit Limi
 	currentCount := float64(window.PrevCount)*d + float64(window.CurrentCount)
 
 	if currentCount >= float64(limit.Rate) {
-		ttl := retryAfter(int64(limit.Rate), window.Start, now, windowLength, window.PrevCount, window.CurrentCount)
+		ttl := l.retryAfter(int64(limit.Rate), window.Start, now, windowLength, window.PrevCount, window.CurrentCount)
 		return &Result{
 			Allowed:    false,
 			RetryAfter: time.Duration(ttl),
@@ -80,7 +80,7 @@ func (l *SlidingWindowLimiter) Allow(ctx context.Context, key string, limit Limi
 	}
 }
 
-func retryAfter(size, start, now, unit int64, preCount int64, curCount int64) int64 {
+func (l *SlidingWindowLimiter) retryAfter(size, start, now, unit int64, preCount int64, curCount int64) int64 {
 	d := 1.
 	if preCount != 0 {
 		d -= float64(size-curCount) / float64(preCount)
@@ -90,7 +90,6 @@ func retryAfter(size, start, now, unit int64, preCount int64, curCount int64) in
 }
 
 type Result struct {
-	Limit      Limit
 	Allowed    bool
 	RetryAfter time.Duration
 }
