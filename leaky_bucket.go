@@ -19,7 +19,7 @@ func NewLeakyBucketLimiter(ds Datastore[leakyBucketRecord]) Limiter {
 }
 
 func (l *LeakyBucketLimiter) Allow(ctx context.Context, key string, limit *Limit) (*Result, error) {
-	if limit.Rate < 0 {
+	if limit.Rate <= 0 {
 		return &Result{
 			Allowed: true,
 		}, nil

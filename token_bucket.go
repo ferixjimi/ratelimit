@@ -20,7 +20,7 @@ func NewTokenBucketLimiter(ds Datastore[tokenBucketRecord]) Limiter {
 }
 
 func (t *TokenBucketLimiter) Allow(ctx context.Context, key string, limit *Limit) (*Result, error) {
-	if limit.Rate < 0 {
+	if limit.Rate <= 0 {
 		return &Result{
 			Allowed: true,
 		}, nil
@@ -58,6 +58,7 @@ func (t *TokenBucketLimiter) Allow(ctx context.Context, key string, limit *Limit
 	}, nil
 }
 
+// todo: get now from args
 func (t *TokenBucketLimiter) retryAfter(bucket *tokenBucketRecord, limit *Limit) int64 {
 	speed := limit.Period.Nanoseconds() / int64(limit.Rate)
 	return speed - (time.Now().UnixNano() - bucket.Start)

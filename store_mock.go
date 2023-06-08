@@ -17,7 +17,11 @@ func (m *mockDs[T]) Increment(ctx context.Context, key string) error {
 	case *tokenBucketRecord:
 		r := reflect.ValueOf(m.record).Interface().(*tokenBucketRecord)
 		r.Count += 1
+	case *fixedWindowRecord:
+		r := reflect.ValueOf(m.record).Interface().(*fixedWindowRecord)
+		r.Count += 1
 	}
+
 	return nil
 }
 

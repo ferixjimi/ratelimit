@@ -27,8 +27,7 @@ func NewSlidingWindowLimiter(ds Datastore[slidingWindowRecord]) Limiter {
 }
 
 func (l *SlidingWindowLimiter) Allow(ctx context.Context, key string, limit *Limit) (*Result, error) {
-	// ignore negative rates
-	if limit.Rate < 0 {
+	if limit.Rate <= 0 {
 		return &Result{
 			Allowed: true,
 		}, nil

@@ -14,7 +14,7 @@ type Datastore[T record] interface {
 }
 
 type record interface {
-	slidingWindowRecord | tokenBucketRecord | leakyBucketRecord
+	slidingWindowRecord | tokenBucketRecord | leakyBucketRecord | fixedWindowRecord
 }
 
 func NewRedisStore[T record](db *redis.Client) Datastore[T] {
