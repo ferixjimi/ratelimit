@@ -6,7 +6,7 @@ import (
 )
 
 type FixedWindowLimiter struct {
-	ds Datastore[fixedWindowRecord]
+	s Store[fixedWindowRecord]
 }
 
 type fixedWindowRecord struct {
@@ -14,8 +14,8 @@ type fixedWindowRecord struct {
 	Count int   `redis:"count"`
 }
 
-func NewFixedWindowLimiter(ds Datastore[fixedWindowRecord]) Limiter {
-	return &FixedWindowLimiter{ds: ds}
+func NewFixedWindowLimiter(s Store[fixedWindowRecord]) Limiter {
+	return &FixedWindowLimiter{s: s}
 }
 
 // todo: set error correctly
@@ -26,9 +26,9 @@ func (l *FixedWindowLimiter) Allow(ctx context.Context, key string, limit *Limit
 		}, nil
 	}
 
-	bucket, err := l.ds.Get(ctx, key)
+	bucket, err := l.s.Get(ctx, key)
 	if err != nil || bucket.Start == 0 {
-		l.ds.Set(ctx, key, &fixedWindowRecord{
+		l.s.Set(ctx, key, &fixedWindowRecord{
 			Start: time.Now().UnixNano(),
 			Count: 1,
 		})
@@ -42,7 +42,7 @@ func (l *FixedWindowLimiter) Allow(ctx context.Context, key string, limit *Limit
 	windowLength := limit.Period.Nanoseconds()
 	elapsedTime := now - bucket.Start
 	if elapsedTime > windowLength {
-		l.ds.Set(ctx, key, &fixedWindowRecord{
+		l.s.Set(ctx, key, &fixedWindowRecord{
 			Start: now - (now-bucket.Start)%windowLength,
 			Count: 1,
 		})
@@ -58,7 +58,7 @@ func (l *FixedWindowLimiter) Allow(ctx context.Context, key string, limit *Limit
 		}, nil
 	}
 
-	l.ds.Increment(ctx, key)
+	l.s.Increment(ctx, key)
 	return &Result{
 		Allowed: true,
 	}, nil

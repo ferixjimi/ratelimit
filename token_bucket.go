@@ -7,7 +7,7 @@ import (
 )
 
 type TokenBucketLimiter struct {
-	ds Datastore[tokenBucketRecord]
+	s Store[tokenBucketRecord]
 }
 
 type tokenBucketRecord struct {
@@ -15,8 +15,8 @@ type tokenBucketRecord struct {
 	Count int   `redis:"count"`
 }
 
-func NewTokenBucketLimiter(ds Datastore[tokenBucketRecord]) Limiter {
-	return &TokenBucketLimiter{ds: ds}
+func NewTokenBucketLimiter(s Store[tokenBucketRecord]) Limiter {
+	return &TokenBucketLimiter{s: s}
 }
 
 func (t *TokenBucketLimiter) Allow(ctx context.Context, key string, limit *Limit) (*Result, error) {
@@ -26,9 +26,9 @@ func (t *TokenBucketLimiter) Allow(ctx context.Context, key string, limit *Limit
 		}, nil
 	}
 
-	bucket, err := t.ds.Get(ctx, key)
+	bucket, err := t.s.Get(ctx, key)
 	if err != nil || bucket.Start == 0 {
-		t.ds.Set(ctx, key, &tokenBucketRecord{
+		t.s.Set(ctx, key, &tokenBucketRecord{
 			Start: time.Now().UnixNano(),
 			Count: limit.Rate - 1,
 		})
@@ -51,7 +51,7 @@ func (t *TokenBucketLimiter) Allow(ctx context.Context, key string, limit *Limit
 
 	bucket.Count = count
 	bucket.Start += (newTokens * limit.Period.Nanoseconds()) / int64(limit.Rate)
-	t.ds.Set(ctx, key, bucket)
+	t.s.Set(ctx, key, bucket)
 
 	return &Result{
 		Allowed: true,

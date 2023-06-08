@@ -7,15 +7,15 @@ import (
 
 // todo: add support for concurrent access
 type LeakyBucketLimiter struct {
-	ds Datastore[leakyBucketRecord]
+	s Store[leakyBucketRecord]
 }
 
 type leakyBucketRecord struct {
 	Last int64 `redis:"last"`
 }
 
-func NewLeakyBucketLimiter(ds Datastore[leakyBucketRecord]) Limiter {
-	return &LeakyBucketLimiter{ds: ds}
+func NewLeakyBucketLimiter(s Store[leakyBucketRecord]) Limiter {
+	return &LeakyBucketLimiter{s: s}
 }
 
 func (l *LeakyBucketLimiter) Allow(ctx context.Context, key string, limit *Limit) (*Result, error) {
@@ -25,9 +25,9 @@ func (l *LeakyBucketLimiter) Allow(ctx context.Context, key string, limit *Limit
 		}, nil
 	}
 
-	bucket, err := l.ds.Get(ctx, key)
+	bucket, err := l.s.Get(ctx, key)
 	if err != nil || bucket.Last == 0 {
-		l.ds.Set(ctx, key, &leakyBucketRecord{
+		l.s.Set(ctx, key, &leakyBucketRecord{
 			Last: time.Now().UnixNano(),
 		})
 
@@ -47,7 +47,7 @@ func (l *LeakyBucketLimiter) Allow(ctx context.Context, key string, limit *Limit
 	}
 
 	bucket.Last = time.Now().UnixNano()
-	l.ds.Set(ctx, key, bucket)
+	l.s.Set(ctx, key, bucket)
 
 	return &Result{
 		Allowed: true,

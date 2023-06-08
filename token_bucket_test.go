@@ -9,9 +9,9 @@ import (
 func TestTokenBucketLimiter_Allow(t *testing.T) {
 	limit := PerSecond(1)
 	key := "key"
-	ds := &mockDs[tokenBucketRecord]{record: &tokenBucketRecord{}}
+	s := &mockStore[tokenBucketRecord]{record: &tokenBucketRecord{}}
 
-	limiter := NewTokenBucketLimiter(ds)
+	limiter := NewTokenBucketLimiter(s)
 
 	result, err := limiter.Allow(context.Background(), key, limit)
 	if err != nil {
@@ -31,7 +31,7 @@ func TestTokenBucketLimiter_Allow(t *testing.T) {
 		t.Error("this attempt should'nt be allowed")
 	}
 
-	if ds.record.Count != 0 {
+	if s.record.Count != 0 {
 		t.Error("wrong count")
 	}
 

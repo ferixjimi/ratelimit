@@ -7,7 +7,7 @@ import (
 )
 
 type SlidingWindowLimiter struct {
-	ds Datastore[slidingWindowRecord]
+	s Store[slidingWindowRecord]
 }
 
 const (
@@ -20,9 +20,9 @@ type slidingWindowRecord struct {
 	CurrentCount int64 `redis:"current"`
 }
 
-func NewSlidingWindowLimiter(ds Datastore[slidingWindowRecord]) Limiter {
+func NewSlidingWindowLimiter(s Store[slidingWindowRecord]) Limiter {
 	return &SlidingWindowLimiter{
-		ds: ds,
+		s: s,
 	}
 }
 
@@ -33,9 +33,9 @@ func (l *SlidingWindowLimiter) Allow(ctx context.Context, key string, limit *Lim
 		}, nil
 	}
 
-	window, err := l.ds.Get(ctx, key)
+	window, err := l.s.Get(ctx, key)
 	if err != nil || window.Start == 0 {
-		l.ds.Set(ctx, key, &slidingWindowRecord{
+		l.s.Set(ctx, key, &slidingWindowRecord{
 			Start:        time.Now().UnixNano(),
 			CurrentCount: 1,
 		})
@@ -52,7 +52,7 @@ func (l *SlidingWindowLimiter) Allow(ctx context.Context, key string, limit *Lim
 		window.Start += windowLength
 		window.PrevCount = window.CurrentCount
 		window.CurrentCount = 0
-		err = l.ds.Set(ctx, key, window)
+		err = l.s.Set(ctx, key, window)
 		if err != nil {
 			fmt.Println(err)
 		}
@@ -69,7 +69,7 @@ func (l *SlidingWindowLimiter) Allow(ctx context.Context, key string, limit *Lim
 			RetryAfter: time.Duration(ttl),
 		}, nil
 	} else {
-		err = l.ds.Increment(ctx, key)
+		err = l.s.Increment(ctx, key)
 		if err != nil {
 			fmt.Println(err)
 		}

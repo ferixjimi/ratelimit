@@ -9,9 +9,9 @@ import (
 func TestFixedWindowLimiter_Allow(t *testing.T) {
 	limit := PerSecond(1)
 	key := "key"
-	ds := &mockDs[fixedWindowRecord]{record: &fixedWindowRecord{}}
+	s := &mockStore[fixedWindowRecord]{record: &fixedWindowRecord{}}
 
-	limiter := NewFixedWindowLimiter(ds)
+	limiter := NewFixedWindowLimiter(s)
 
 	result, err := limiter.Allow(context.Background(), key, limit)
 	if err != nil {
@@ -31,7 +31,7 @@ func TestFixedWindowLimiter_Allow(t *testing.T) {
 		t.Error("this attempt should'nt be allowed")
 	}
 
-	if ds.record.Count != 1 {
+	if s.record.Count != 1 {
 		t.Error("wrong count")
 	}
 

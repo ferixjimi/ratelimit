@@ -9,9 +9,9 @@ import (
 func TestSlidingWindowLimiter_Allow(t *testing.T) {
 	limit := PerSecond(1)
 	key := "key"
-	ds := &mockDs[slidingWindowRecord]{record: &slidingWindowRecord{}}
+	s := &mockStore[slidingWindowRecord]{record: &slidingWindowRecord{}}
 
-	limiter := NewSlidingWindowLimiter(ds)
+	limiter := NewSlidingWindowLimiter(s)
 
 	result, err := limiter.Allow(context.Background(), key, limit)
 	if err != nil {
@@ -31,7 +31,7 @@ func TestSlidingWindowLimiter_Allow(t *testing.T) {
 		t.Error("this attempt should'nt be allowed")
 	}
 
-	if ds.record.CurrentCount != 1 || ds.record.PrevCount != 0 {
+	if s.record.CurrentCount != 1 || s.record.PrevCount != 0 {
 		t.Error("wrong current or prev Count")
 	}
 
@@ -45,7 +45,7 @@ func TestSlidingWindowLimiter_Allow(t *testing.T) {
 		t.Errorf("this attempt should be allowed")
 	}
 
-	if ds.record.CurrentCount != 1 || ds.record.PrevCount != 1 {
+	if s.record.CurrentCount != 1 || s.record.PrevCount != 1 {
 		t.Error("wrong current or prev Count")
 	}
 }

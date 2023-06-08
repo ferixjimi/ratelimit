@@ -5,7 +5,7 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-type Datastore[T record] interface {
+type Store[T record] interface {
 	Increment(ctx context.Context, key string) error
 
 	Get(ctx context.Context, key string) (record *T, err error)
@@ -17,7 +17,7 @@ type record interface {
 	slidingWindowRecord | tokenBucketRecord | leakyBucketRecord | fixedWindowRecord
 }
 
-func NewRedisStore[T record](db *redis.Client) Datastore[T] {
+func NewRedisStore[T record](db *redis.Client) Store[T] {
 	return &RedisStore[T]{
 		db: db,
 	}

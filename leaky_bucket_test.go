@@ -9,9 +9,9 @@ import (
 func TestLeakyBucketLimiter_Allow(t *testing.T) {
 	limit := PerSecond(1)
 	key := "key"
-	ds := &mockDs[leakyBucketRecord]{record: &leakyBucketRecord{}}
+	s := &mockStore[leakyBucketRecord]{record: &leakyBucketRecord{}}
 
-	limiter := NewLeakyBucketLimiter(ds)
+	limiter := NewLeakyBucketLimiter(s)
 
 	result, err := limiter.Allow(context.Background(), key, limit)
 	if err != nil {

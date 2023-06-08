@@ -5,11 +5,11 @@ import (
 	"reflect"
 )
 
-type mockDs[T record] struct {
+type mockStore[T record] struct {
 	record *T
 }
 
-func (m *mockDs[T]) Increment(ctx context.Context, key string) error {
+func (m *mockStore[T]) Increment(ctx context.Context, key string) error {
 	switch any(m.record).(type) {
 	case *slidingWindowRecord:
 		r := reflect.ValueOf(m.record).Interface().(*slidingWindowRecord)
@@ -25,11 +25,11 @@ func (m *mockDs[T]) Increment(ctx context.Context, key string) error {
 	return nil
 }
 
-func (m *mockDs[T]) Get(ctx context.Context, key string) (record *T, err error) {
+func (m *mockStore[T]) Get(ctx context.Context, key string) (record *T, err error) {
 	return m.record, nil
 }
 
-func (m *mockDs[T]) Set(ctx context.Context, key string, record *T) error {
+func (m *mockStore[T]) Set(ctx context.Context, key string, record *T) error {
 	m.record = record
 	return nil
 }
