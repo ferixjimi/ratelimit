@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-var _ ratelimit.Limiter = (*LeakyBucketLimiter)(nil)
+var _ ratelimit.ILimiter = (*LeakyBucketLimiter)(nil)
 
 // todo: add support for concurrent access
 type LeakyBucketLimiter struct{}

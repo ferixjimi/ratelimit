@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-var _ ratelimit.Limiter = (*SlidingWindowLimiter)(nil)
+var _ ratelimit.ILimiter = (*SlidingWindowLimiter)(nil)
 
 type SlidingWindowLimiter struct{}
 

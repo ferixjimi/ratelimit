@@ -9,7 +9,7 @@ const (
 	currentCountFieldTag = "current"
 )
 
-type Store interface {
+type IStore interface {
 	Increment(ctx context.Context, key string) error
 
 	Get(ctx context.Context, key string) (record interface{}, err error)
@@ -17,7 +17,7 @@ type Store interface {
 	Set(ctx context.Context, key string, record interface{}) error
 }
 
-func NewRedisStore(db *redis.Client) Store {
+func NewRedisStore(db *redis.Client) IStore {
 	return &RedisStore{
 		db: db,
 	}
