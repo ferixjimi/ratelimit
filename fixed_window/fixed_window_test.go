@@ -1,4 +1,4 @@
-package ratelimit
+package fixed_window
 
 import (
 	"context"
@@ -9,9 +9,9 @@ import (
 func TestFixedWindowLimiter_Allow(t *testing.T) {
 	limit := PerSecond(1)
 	key := "key"
-	s := &mockStore[fixedWindowRecord]{record: &fixedWindowRecord{}}
+	s := &mockStore[record]{record: &record{}}
 
-	limiter := NewFixedWindowLimiter(s)
+	limiter := NewFixedWindowLimiter()
 
 	result, err := limiter.Allow(context.Background(), key, limit)
 	if err != nil {

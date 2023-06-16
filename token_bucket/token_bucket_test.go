@@ -1,4 +1,4 @@
-package ratelimit
+package token_bucket
 
 import (
 	"context"
@@ -6,12 +6,12 @@ import (
 	"time"
 )
 
-func TestLeakyBucketLimiter_Allow(t *testing.T) {
+func TestTokenBucketLimiter_Allow(t *testing.T) {
 	limit := PerSecond(1)
 	key := "key"
-	s := &mockStore[leakyBucketRecord]{record: &leakyBucketRecord{}}
+	s := &mockStore[tokenBucketRecord]{record: &tokenBucketRecord{}}
 
-	limiter := NewLeakyBucketLimiter(s)
+	limiter := NewTokenBucketLimiter(s)
 
 	result, err := limiter.Allow(context.Background(), key, limit)
 	if err != nil {
@@ -29,6 +29,10 @@ func TestLeakyBucketLimiter_Allow(t *testing.T) {
 
 	if result.Allowed {
 		t.Error("this attempt should'nt be allowed")
+	}
+
+	if s.record.Count != 0 {
+		t.Error("wrong count")
 	}
 
 	if result.RetryAfter > time.Second {

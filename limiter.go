@@ -1,7 +1,14 @@
 package ratelimit
 
-import "context"
+import (
+	"time"
+)
 
-type Limiter interface {
-	Allow(ctx context.Context, key string, limit *Limit) (*Result, error)
+type Limiter interface { // todo add retry after
+	Allow(limit *Limit, data interface{}) (bool, interface{}, error)
+}
+
+type Result struct {
+	Allowed    bool
+	RetryAfter time.Duration
 }

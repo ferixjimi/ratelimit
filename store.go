@@ -5,39 +5,39 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-type Store[T record] interface {
+const (
+	currentCountFieldTag = "current"
+)
+
+type Store interface {
 	Increment(ctx context.Context, key string) error
 
-	Get(ctx context.Context, key string) (record *T, err error)
+	Get(ctx context.Context, key string) (record interface{}, err error)
 
-	Set(ctx context.Context, key string, record *T) error
+	Set(ctx context.Context, key string, record interface{}) error
 }
 
-type record interface {
-	slidingWindowRecord | tokenBucketRecord | leakyBucketRecord | fixedWindowRecord
-}
-
-func NewRedisStore[T record](db *redis.Client) Store[T] {
-	return &RedisStore[T]{
+func NewRedisStore(db *redis.Client) Store {
+	return &RedisStore{
 		db: db,
 	}
 }
 
-type RedisStore[T record] struct {
+type RedisStore struct {
 	db *redis.Client
 }
 
-func (r *RedisStore[T]) Increment(ctx context.Context, key string) error {
+func (r *RedisStore) Increment(ctx context.Context, key string) error {
 	return r.db.HIncrBy(ctx, key, currentCountFieldTag, 1).Err()
 }
 
-func (r *RedisStore[T]) Get(ctx context.Context, key string) (*T, error) {
+func (r *RedisStore) Get(ctx context.Context, key string) (interface{}, error) {
 	res := r.db.HGetAll(ctx, key)
 	if err := res.Err(); err != nil {
 		return nil, err
 	}
 
-	var record T
+	var record interface{}
 	if err := res.Scan(&record); err != nil {
 		return nil, err
 	}
@@ -45,6 +45,6 @@ func (r *RedisStore[T]) Get(ctx context.Context, key string) (*T, error) {
 	return &record, nil
 }
 
-func (r *RedisStore[T]) Set(ctx context.Context, key string, record *T) error {
+func (r *RedisStore) Set(ctx context.Context, key string, record interface{}) error {
 	return r.db.HSet(ctx, key, record).Err()
 }

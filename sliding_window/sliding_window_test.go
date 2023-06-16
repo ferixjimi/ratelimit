@@ -1,4 +1,4 @@
-package ratelimit
+package sliding_window
 
 import (
 	"context"
